@@ -98,7 +98,7 @@ def signin():
                 'email': res.user.email
             }
         }), 200
-    except Exception as e:
+    except Exception:
         return jsonify({'error': 'Invalid email or password'}), 401
 
 @app.route('/api/verify-token', methods=['POST'])
@@ -124,7 +124,7 @@ def verify_token():
             }), 200
         else:
             return jsonify({'valid': False, 'error': 'User not found or token invalid'}), 401
-    except Exception as e:
+    except Exception:
         return jsonify({'valid': False, 'error': 'Token is invalid or expired'}), 401
 
 @app.route('/api/analyze-essay', methods=['POST'])
