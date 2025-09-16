@@ -21,6 +21,14 @@ while ! curl -fsS "$BASE/index.html" >/dev/null 2>&1; do
   fi
   sleep 1
 done
+while ! curl -fsS "$API/signup" >/dev/null 2>&1; do
+  timeout=$((timeout - 1))
+  if [ $timeout -le 0 ]; then
+    echo "API did not start in time" >&2
+    exit 1
+  fi
+  sleep 1
+done
 
 EMAIL="user$RANDOM@example.com"
 PASS="pass1234"
