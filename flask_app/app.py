@@ -23,7 +23,7 @@ supabase: Client = create_client(url, key)
 
 def load_role_prompt():
     try:
-        prompt_path = os.path.join(os.path.dirname(__file__), 'role_prompt.txt')
+        prompt_path = os.path.join(os.path.dirname(__file__), 'role.txt')
         with open(prompt_path, 'r', encoding='utf-8') as f:
             return f.read().strip()
     except FileNotFoundError:
