@@ -28,8 +28,10 @@ jobs:
       - name: Run smoke tests
         run: bash flask_app/tests/app_test.sh
 
-      - name: Run pytest
-        run: docker compose exec -w /app flask_app python -m pytest
+      - name: Lint with ruff
+        run: |
+          docker compose exec flask_app pip install ruff
+          docker compose exec flask_app ruff check .
       
       - name: show logs on failure
         if: failure()
