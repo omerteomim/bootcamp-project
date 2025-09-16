@@ -9,7 +9,7 @@ then
 fi
 
 BASE="http://localhost:8080"
-API="http://localhost:5000/api"
+API="http://0.0.0.0:5000/api"
 
 echo "Waiting for services..."
 timeout=60
@@ -27,7 +27,7 @@ PASS="pass1234"
 
 echo "Signup"
 curl -fsS -X POST "$API/signup" -H "Content-Type: application/json" \
-  -d "{\"email\":\"$EMAIL\",\"password\":\"$PASS\"}" >/dev/null || true
+  -d "{\"email\":\"$EMAIL\",\"password\":\"$PASS\"}" || true
 
 echo "Signin"
 TOKEN=$(curl -fsS -X POST "$API/signin" -H "Content-Type: application/json" \
