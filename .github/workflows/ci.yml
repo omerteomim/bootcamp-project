@@ -29,7 +29,7 @@ jobs:
         run: bash flask_app/tests/app_test.sh
 
       - name: Run pytest
-        run: docker compose exec flask_app pytest
+        run: docker compose exec -w /app flask_app pytest
       
       - name: show logs on failure
         if: failure()
