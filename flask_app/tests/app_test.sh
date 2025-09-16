@@ -21,6 +21,7 @@ while ! curl -fsS "$BASE/index.html" >/dev/null 2>&1; do
   fi
   sleep 1
 done
+timeout=60
 while ! curl -fsS "$API/signup" >/dev/null 2>&1; do
   timeout=$((timeout - 1))
   if [ $timeout -le 0 ]; then
