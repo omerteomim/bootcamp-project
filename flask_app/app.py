@@ -139,7 +139,7 @@ def analyze_essay(current_user):
             return jsonify({'error': 'Both question and answer are required'}), 400
 
         if os.environ.get('TEST_MODE') == 'true':
-            result = f"[TEST MODE] תשובה לשאלה: {user_text}\nתשובה: {user_answer}"
+            result = f"[TEST_MODE] תשובה לשאלה: {user_text}\nתשובה: {user_answer}"
         else:
             role = load_role_prompt()
             api_key = os.environ.get('GROQ_API_KEY')
