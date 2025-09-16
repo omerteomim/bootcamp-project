@@ -24,6 +24,9 @@ jobs:
       - name: Run docker compose up
         run: TEST_MODE="true" docker compose up -d --build
 
+      - name: Check env inside container
+        run: docker compose exec flask_app env
+
       - name: Run smoke tests
         run: bash flask_app/tests/app_test.sh
 
