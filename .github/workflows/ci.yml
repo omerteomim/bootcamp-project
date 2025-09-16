@@ -1,0 +1,38 @@
+name: CI
+
+on:
+  push:
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install jq
+        run: sudo apt-get update && sudo apt-get install -y jq
+      
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Run docker compose up
+        run: docker compose up -d --build
+
+      - name: Run smoke tests
+        run: bash flask_app/tests/app_test.sh
+
+      - name: Run pytest
+        run: docker compose exec flask_app pytest
+      
+      - name: show logs on failure
+        if: failure()
+        run: docker compose logs --tail=100
+
+      - name: Tear down
+        if: always()
+        run: docker compose down -v
+
+
+
+
