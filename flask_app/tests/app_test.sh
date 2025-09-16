@@ -9,7 +9,7 @@ then
 fi
 
 BASE="http://localhost:8080"
-API="http://0.0.0.0:5000/api"
+API="http://localhost:5000/api"
 
 echo "Waiting for services..."
 timeout=60
