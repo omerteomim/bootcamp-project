@@ -8,8 +8,8 @@ then
   exit 1
 fi
 
-BASE="${BASE_URL:-http://localhost:8080}"
-API="${API_URL:-http://localhost:5000/api}"
+BASE="http://localhost:8080"
+API="http://localhost:5000/api"
 
 echo "Waiting for services..."
 timeout=60
@@ -17,15 +17,6 @@ while ! curl -fsS "$BASE/index.html" >/dev/null 2>&1; do
   timeout=$((timeout - 1))
   if [ $timeout -le 0 ]; then
     echo "Services did not start in time" >&2
-    exit 1
-  fi
-  sleep 1
-done
-timeout=60
-while ! curl -fsS "$API/signup" >/dev/null 2>&1; do
-  timeout=$((timeout - 1))
-  if [ $timeout -le 0 ]; then
-    echo "API did not start in time" >&2
     exit 1
   fi
   sleep 1
