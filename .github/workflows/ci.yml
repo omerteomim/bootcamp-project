@@ -69,7 +69,7 @@ jobs:
           push: true
           tags: |
             ${{ secrets.DOCKERHUB_USERNAME }}/backend:latest
-            ${{ secrets.DOCKERHUB_USERNAME }}/backend:${{ date +%Y%m%d-%H%M%S }}
+            ${{ secrets.DOCKERHUB_USERNAME }}/backend:$(date +%Y%m%d-%H%M%S)
       
       - name: build and push frontend
         uses: docker/build-push-action@v6
@@ -78,4 +78,4 @@ jobs:
           push: true
           tags: |
             ${{ secrets.DOCKER_HUB_USERNAME }}/frontend:latest
-            ${{ secrets.DOCKER_HUB_USERNAME }}/frontend:${{ date +%Y%m%d-%H%M%S }}
+            ${{ secrets.DOCKER_HUB_USERNAME }}/frontend:$(date +%Y%m%d-%H%M%S)
