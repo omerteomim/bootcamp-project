@@ -80,5 +80,5 @@ jobs:
           context: frontend
           push: true
           tags: |
-            ${{ secrets.DOCKER_HUB_USERNAME }}/frontend:latest
-            ${{ secrets.DOCKER_HUB_USERNAME }}/frontend:${{ env.TIMESTAMP }}
+            ${{ secrets.DOCKERHUB_USERNAME }}/frontend:latest
+            ${{ secrets.DOCKERHUB_USERNAME }}/frontend:${{ env.TIMESTAMP }}
