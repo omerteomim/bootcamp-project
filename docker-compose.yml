@@ -5,7 +5,7 @@ services:
       - "8080:80"
     depends_on:
       - flask_app
-    env:
+    environment:
       - API_BACKEND=flask_app
 
   flask_app:
