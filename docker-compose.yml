@@ -6,7 +6,7 @@ services:
     depends_on:
       - flask_app
     environment:
-      - BACKEND_HOST=flask_app
+      - BACKEND_HOST="flask_app"
 
   flask_app:
     build: ./flask_app
