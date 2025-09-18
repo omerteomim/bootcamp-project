@@ -72,7 +72,7 @@ USER=$(curl -s "$SUPABASE_URL/auth/v1/admin/users?email=$EMAIL" \
   -H "apikey: $SUPABASE_SERVICE_ROLE_KEY" \
   -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY")
 
-USER_ID=$(echo "$USER" | jq -r '.[0].id // .users[0].id')
+USER_ID=$(echo "$USER" | jq -r '.users[0].id')
 
 echo "Deleting user: $EMAIL ($USER_ID)"
 curl -s -X DELETE "$SUPABASE_URL/auth/v1/admin/users/$USER_ID" \
