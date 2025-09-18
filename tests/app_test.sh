@@ -68,15 +68,15 @@ echo "Cleaning up history..."
 curl -fsS -X DELETE "$API/history" -H "Authorization: Bearer $TOKEN" >/dev/null
 
 echo "Cleaning up user from db..."
-USER=$(curl -s "${{ secrets.SUPABASE_URL }}/auth/v1/admin/users?email=$EMAIL" \
-  -H "apikey: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" \
-  -H "Authorization: Bearer ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}")
+USER=$(curl -s "$SUPABASE_URL/auth/v1/admin/users?email=$EMAIL" \
+  -H "apikey: $SUPABASE_SERVICE_ROLE_KEY" \
+  -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY")
 
 USER_ID=$(echo "$USER" | jq -r '.[0].id // .users[0].id')
 
 echo "Deleting user: $EMAIL ($USER_ID)"
-curl -s -X DELETE "${{ secrets.SUPABASE_URL }}/auth/v1/admin/users/$USER_ID" \
-  -H "apikey: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" \
-  -H "Authorization: Bearer ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" >/dev/null
+curl -s -X DELETE "$SUPABASE_URL/auth/v1/admin/users/$USER_ID" \
+  -H "apikey: $SUPABASE_SERVICE_ROLE_KEY" \
+  -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY" >/dev/null
 
 echo "OK"
