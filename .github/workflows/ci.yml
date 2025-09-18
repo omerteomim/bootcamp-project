@@ -35,7 +35,7 @@ jobs:
           docker compose up -d --build
 
       - name: Run smoke tests
-        run: bash flask_app/tests/app_test.sh
+        run: bash tests/app_test.sh
       
       - name: show logs on failure
         if: failure()
