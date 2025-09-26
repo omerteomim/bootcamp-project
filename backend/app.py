@@ -160,7 +160,8 @@ def update_user(current_user):
         attributes = {'user_metadata': {'name': name, 'phone': phone}}
         supabase_admin.auth.admin.update_user_by_id(current_user.id, attributes)
 
-        return jsonify({'message': 'User updated successfully'}), 200
+        return jsonify({'message': 'User updated successfully',
+            'user': attributes['user_metadata']}), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
@@ -221,18 +222,6 @@ def analyze_essay(current_user):
         if '402' in err_msg or 'payment' in err_msg.lower() or 'credit' in err_msg.lower():
             return jsonify({'error': 'Payment required or credits issue.'}), 402
         return jsonify({'error': f'Internal server error: {err_msg}'}), 500
-
-@app.route('/api/dashboard')
-@token_required
-def dashboard(current_user):
-    return jsonify({
-        'message': f'Welcome to your dashboard, {current_user.email}!',
-        'user': {
-            'id': current_user.id,
-            'email': current_user.email,
-            'profile': current_user.profile # Include profile data here
-        }
-    })
 
 @app.route('/api/history', methods=['GET'])
 @token_required
