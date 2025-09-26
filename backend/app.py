@@ -1,6 +1,7 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import os
+import logging
 from functools import wraps
 from dotenv import load_dotenv
 from supabase import create_client, Client
@@ -11,6 +12,9 @@ load_dotenv()
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'supersecretkey')
+
+# Configure logging
+logging.basicConfig(filename='app.log', level=logging.DEBUG, format=f'%(asctime)s %(levelname)s %(name)s %(threadName)s : %(message)s')
 
 # Enable CORS for frontend requests
 CORS(app, resources={r"/api/*": {"origins": "*"}}, supports_credentials=True,
@@ -49,6 +53,7 @@ def token_required(f):
             current_user = user_response.user
             if not current_user:
                  return jsonify({'error': 'User not found'}), 401
+
         except Exception as e:
             return jsonify({'error': 'Token is invalid or expired', 'details': str(e)}), 401
 
@@ -90,12 +95,18 @@ def signin():
 
         res = supabase.auth.sign_in_with_password({"email": email, "password": password})
 
+        user = res.user
+        profile_data = None
+        if user:
+            profile_data = user.user_metadata
+
         return jsonify({
             'message': 'Login successful',
             'token': res.session.access_token,
             'user': {
-                'id': res.user.id,
-                'email': res.user.email
+                'id': user.id,
+                'email': user.email,
+                'profile': profile_data # Include profile data here
             }
         }), 200
     except Exception:
@@ -115,17 +126,43 @@ def verify_token():
         
         if user_response.user:
             user = user_response.user
+            profile_data = user.user_metadata
+
             return jsonify({
                 'valid': True,
                 'user': {
                     'id': user.id,
-                    'email': user.email
+                    'email': user.email,
+                    'created_at': user.created_at,
+                    'user_metadata': user.user_metadata,
+                    'profile': profile_data # Include profile data here
                 }
             }), 200
         else:
             return jsonify({'valid': False, 'error': 'User not found or token invalid'}), 401
     except Exception:
         return jsonify({'valid': False, 'error': 'Token is invalid or expired'}), 401
+
+@app.route('/api/user/update', methods=['POST'])
+@token_required
+def update_user(current_user):
+    try:
+        data = request.get_json()
+        name = data.get('name')
+        phone = data.get('phone')
+
+        service_key = os.environ.get('SUPABASE_SERVICE_ROLE_KEY')
+        if not service_key:
+            return jsonify({'error': 'SUPABASE_SERVICE_ROLE_KEY is not configured'}), 500
+
+        supabase_admin = create_client(url, service_key)
+
+        attributes = {'user_metadata': {'name': name, 'phone': phone}}
+        supabase_admin.auth.admin.update_user_by_id(current_user.id, attributes)
+
+        return jsonify({'message': 'User updated successfully'}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/api/analyze-essay', methods=['POST'])
 @token_required
@@ -167,7 +204,7 @@ def analyze_essay(current_user):
                 "result": result
             }).execute()
         except Exception as e:
-            print(f"DEBUG: history save error: {e}")
+            app.logger.error(f"DEBUG: history save error: {e}")
 
         return jsonify({
             'result': result,
@@ -192,14 +229,15 @@ def dashboard(current_user):
         'message': f'Welcome to your dashboard, {current_user.email}!',
         'user': {
             'id': current_user.id,
-            'email': current_user.email
+            'email': current_user.email,
+            'profile': current_user.profile # Include profile data here
         }
     })
 
 @app.route('/api/history', methods=['GET'])
 @token_required
 def get_history(current_user):
-    res = supabase.table('history').select("*", count='exact').order('created_at', desc=True).limit(50).execute()
+    res = supabase.table('history').select("*", count='exact').eq('user_id', current_user.id).order('created_at', desc=True).limit(50).execute()
     return jsonify({'history': res.data})
 
 @app.route('/api/history', methods=['DELETE'])
@@ -208,6 +246,22 @@ def delete_history(current_user):
     try:
         supabase.table('history').delete().eq('user_id', current_user.id).execute()
         return jsonify({'message': 'History deleted successfully'}), 200
+    except Exception as e:
+        return jsonify({'error': f'Internal server error: {str(e)}'}), 500
+
+@app.route('/api/history/<int:item_id>', methods=['DELETE'])
+@token_required
+def delete_history_item(current_user, item_id):
+    try:
+        # Ensure users can only delete their own history items
+        res = supabase.table('history').delete().match({'id': item_id, 'user_id': current_user.id}).execute()
+        
+        # The `execute` method on delete doesn't raise an error for 0 rows, 
+        # so we check the count to see if anything was deleted.
+        if len(res.data) == 0:
+            return jsonify({'error': 'Item not found or you do not have permission to delete it'}), 404
+
+        return jsonify({'message': 'History item deleted successfully'}), 200
     except Exception as e:
         return jsonify({'error': f'Internal server error: {str(e)}'}), 500
 

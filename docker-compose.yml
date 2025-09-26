@@ -4,12 +4,12 @@ services:
     ports:
       - "8080:80"
     depends_on:
-      - flask_app
+      - backend
     environment:
-      API_BACKEND: flask_app
+      API_BACKEND: backend
 
-  flask_app:
-    build: ./flask_app
+  backend:
+    build: ./backend
     ports:
       - "5000:5000"
     environment:
@@ -18,4 +18,5 @@ services:
       - SUPABASE_KEY=${SUPABASE_KEY}
       - GROQ_API_KEY=${GROQ_API_KEY}
       - SECRET_KEY=${SECRET_KEY}
+      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
 
