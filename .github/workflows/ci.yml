@@ -71,7 +71,7 @@ jobs:
       - name: build and push backend
         uses: docker/build-push-action@v6
         with:
-          context: flask_app
+          context: backend
           push: true
           tags: |
             ${{ secrets.DOCKERHUB_USERNAME }}/backend:latest
