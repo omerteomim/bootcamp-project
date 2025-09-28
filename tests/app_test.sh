@@ -8,8 +8,13 @@ then
   exit 1
 fi
 
+# Load environment variables from .env if it exists
+if [ -f .env ]; then
+  export $(grep -v '^#' .env | xargs)
+fi
+
 BASE="http://localhost:8080"
-API="http://localhost:5000/api"\
+API="http://localhost:5000/api"
 
 echo "waiting a little bit"
 sleep 10
@@ -47,6 +52,13 @@ if ! curl -fsS -X POST "$API/verify-token" -H "Content-Type: application/json" \
   exit 1
 fi
 
+echo "Update User Data"
+curl -fsS -X POST "$API/user/update" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $TOKEN" \
+  -d '{"name":"Test User","phone":"123456789"}' | jq .
+
+
 echo "Analyze (TEST_MODE)"
 RES=$(curl -fsS -X POST "$API/analyze-essay" \
   -H "Content-Type: application/json" \
@@ -57,14 +69,25 @@ if ! echo "$RES" | grep -q "\[TEST_MODE\]"; then
   exit 1
 fi
 
-echo "History"
+echo "Create History"
+for i in 1 2 3; do
+  curl -fsS -X POST "$API/analyze-essay" \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer $TOKEN" \
+    -d "{\"text\":\"Question $i\",\"answer\":\"Answer $i\"}" >/dev/null
+done
+
+echo "Get History Count"
 COUNT=$(curl -fsS "$API/history" -H "Authorization: Bearer $TOKEN" | jq '.history | length')
-if [ "$COUNT" -lt 1 ]; then
+if [ "$COUNT" -lt 3 ]; then
   echo "History is empty" >&2
   exit 1
 fi
+echo "Deleting one history item..."
+ITEM_ID=$(curl -fsS "$API/history" -H "Authorization: Bearer $TOKEN" | jq -r '.history[0].id')
+curl -fsS -X DELETE "$API/history/$ITEM_ID" -H "Authorization: Bearer $TOKEN" >/dev/null
 
-echo "Cleaning up history..."
+echo "Cleaning up all history..."
 curl -fsS -X DELETE "$API/history" -H "Authorization: Bearer $TOKEN" >/dev/null
 
 echo "Cleaning up user from db..."
