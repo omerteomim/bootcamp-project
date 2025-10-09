@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "chart-psychometric.name" . }}-frontend-service
+  labels:
+    {{- include "chart-psychometric.labels" (dict "root" . "component" "frontend") | nindent 4 }}
+spec:
+  type: ClusterIP
+  selector:
+    {{- include "chart-psychometric.labels" (dict "root" . "component" "frontend") | nindent 4 }}
+  ports:
+    - protocol: TCP
+      port: {{ .Values.frontend.service.port }}
+      targetPort: {{ .Values.frontend.service.port }}

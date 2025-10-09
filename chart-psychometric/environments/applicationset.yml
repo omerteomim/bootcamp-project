@@ -1,0 +1,36 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: {{ include "chart-psychometric.name" . }}-applicationset
+spec:
+  generators:
+    - list:
+        elements:
+          - namespace: dev
+            valuefile: environments/dev/values.yaml
+          - namespace: staging
+            valuefile: environments/staging/values.yaml
+          - namespace: prod
+            valuefile: environments/prod/values.yaml
+  template:
+    metadata:
+      name: '{{ include "chart-psychometric.name" . }}-{{ namespace }}'
+    spec:
+      project: default
+      sources:
+      - repoURL: 'https://github.com/omerteomim/bootcamp-gitops.git'
+        targetRevision: HEAD
+        ref: values
+      - repoURL: 'https://github.com/omerteomim/bootcamp-project.git'
+        targetRevision: HEAD
+        path: chart-psychometric
+      destination:
+        server: 'https://kubernetes.default.svc'
+        namespace: '{{ namespace }}'
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+          - CreateNamespace=true
+      

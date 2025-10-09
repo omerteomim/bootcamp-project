@@ -1,0 +1,30 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "chart-psychometric.name" . }}-frontend-deployment
+  labels:
+    {{- include "chart-psychometric.labels" (dict "root" . "component" "frontend") | nindent 4 }}
+spec:
+  replicas: {{ .Values.frontend.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "chart-psychometric.labels" (dict "root" . "component" "frontend") | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "chart-psychometric.labels" (dict "root" . "component" "frontend") | nindent 8 }}
+    spec:
+      containers:
+        - name: {{ include "chart-psychometric.name" . }}-frontend
+          image: "{{ .Values.frontend.image.repository }}:{{ .Values.frontend.image.tag }}"
+          imagePullPolicy: {{ .Values.frontend.image.pullPolicy }}
+          ports:
+            - containerPort: {{ .Values.frontend.service.port }}
+          env:
+            - name: API_BACKEND
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "chart-psychometric.name" . }}-config
+                  key: API_BACKEND
+              
+          {{ include "chart-psychometric.frontend-resources" . | nindent 10 }}
