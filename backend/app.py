@@ -6,12 +6,56 @@ from functools import wraps
 from dotenv import load_dotenv
 from supabase import create_client, Client
 from groq import Groq
+from prometheus_flask_exporter import PrometheusMetrics
+from prometheus_client import Counter, Histogram, Gauge
 
 # Load environment variables from .env file
 load_dotenv()
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'supersecretkey')
+
+# Initialize Prometheus metrics
+metrics = PrometheusMetrics(app)
+
+# Add info metric about the app
+metrics.info('app_info', 'Application info', version='1.0.0')
+
+# Custom metrics for specific tracking
+essay_analysis_counter = Counter(
+    'essay_analysis_total',
+    'Total number of essay analyses',
+    ['user_id', 'status']
+)
+
+essay_analysis_duration = Histogram(
+    'essay_analysis_duration_seconds',
+    'Time spent analyzing essays',
+    ['status']
+)
+
+auth_attempts_counter = Counter(
+    'auth_attempts_total',
+    'Total authentication attempts',
+    ['endpoint', 'status']
+)
+
+active_users_gauge = Gauge(
+    'active_users',
+    'Number of currently active users'
+)
+
+groq_api_calls = Counter(
+    'groq_api_calls_total',
+    'Total calls to Groq API',
+    ['status']
+)
+
+supabase_operations = Counter(
+    'supabase_operations_total',
+    'Total Supabase operations',
+    ['operation', 'table', 'status']
+)
 
 # Configure logging
 logging.basicConfig(filename='app.log', level=logging.DEBUG, format=f'%(asctime)s %(levelname)s %(name)s %(threadName)s : %(message)s')
@@ -69,18 +113,25 @@ def signup():
         password = data.get('password')
 
         if not email or not password:
+            auth_attempts_counter.labels(endpoint='signup', status='invalid_input').inc()
             return jsonify({'error': 'Email and password are required'}), 400
 
         res = supabase.auth.sign_up({"email": email, "password": password})
         
         if res.user and res.user.id:
-             return jsonify({'message': 'User created successfully. Please check your email to verify.'}), 201
+            auth_attempts_counter.labels(endpoint='signup', status='success').inc()
+            supabase_operations.labels(operation='insert', table='auth', status='success').inc()
+            return jsonify({'message': 'User created successfully. Please check your email to verify.'}), 201
         elif res.error:
-             return jsonify({'error': res.error.message}), 400
+            auth_attempts_counter.labels(endpoint='signup', status='failed').inc()
+            supabase_operations.labels(operation='insert', table='auth', status='failed').inc()
+            return jsonify({'error': res.error.message}), 400
         else:
-             return jsonify({'error': 'Could not create user.'}), 500
+            auth_attempts_counter.labels(endpoint='signup', status='failed').inc()
+            return jsonify({'error': 'Could not create user.'}), 500
 
     except Exception as e:
+        auth_attempts_counter.labels(endpoint='signup', status='error').inc()
         return jsonify({'error': f'Internal server error: {str(e)}'}), 500
 
 @app.route('/api/signin', methods=['POST'])
@@ -91,6 +142,7 @@ def signin():
         password = data.get('password')
 
         if not email or not password:
+            auth_attempts_counter.labels(endpoint='signin', status='invalid_input').inc()
             return jsonify({'error': 'Email and password are required'}), 400
 
         res = supabase.auth.sign_in_with_password({"email": email, "password": password})
@@ -99,6 +151,9 @@ def signin():
         profile_data = None
         if user:
             profile_data = user.user_metadata
+            auth_attempts_counter.labels(endpoint='signin', status='success').inc()
+            supabase_operations.labels(operation='select', table='auth', status='success').inc()
+            active_users_gauge.inc()
 
         return jsonify({
             'message': 'Login successful',
@@ -110,6 +165,8 @@ def signin():
             }
         }), 200
     except Exception:
+        auth_attempts_counter.labels(endpoint='signin', status='failed').inc()
+        supabase_operations.labels(operation='select', table='auth', status='failed').inc()
         return jsonify({'error': 'Invalid email or password'}), 401
 
 @app.route('/api/verify-token', methods=['POST'])
@@ -168,15 +225,20 @@ def update_user(current_user):
 @app.route('/api/analyze-essay', methods=['POST'])
 @token_required
 def analyze_essay(current_user):
+    import time
+    start_time = time.time()
+
     try:
         data = request.get_json()
         user_text = data.get('text', '')
         user_answer = data.get('answer', '')
 
         if not user_text or not user_answer:
+            essay_analysis_counter.labels(user_id=current_user.id, status='invalid_input').inc()
             return jsonify({'error': 'Both question and answer are required'}), 400
 
         if os.environ.get('TEST_MODE') == 'true':
+            essay_analysis_counter.labels(user_id=current_user.id, status='test_mode').inc()
             result = f"[TEST_MODE] תשובה לשאלה: {user_text}\nתשובה: {user_answer}"
         else:
             role = load_role_prompt()
@@ -196,6 +258,8 @@ def analyze_essay(current_user):
                 stream=False
             )
             result = chat_completion.choices[0].message.content
+            groq_api_calls.labels(status='success').inc()
+            essay_analysis_counter.labels(user_id=current_user.id, status='success').inc()
 
         try:
             supabase.table('history').insert({
@@ -204,8 +268,13 @@ def analyze_essay(current_user):
                 "answer": user_answer,
                 "result": result
             }).execute()
+            supabase_operations.labels(operation='insert', table='history', status='success').inc()
         except Exception as e:
             app.logger.error(f"DEBUG: history save error: {e}")
+            supabase_operations.labels(operation='insert', table='history', status='failed').inc()
+
+        duration = time.time() - start_time
+        essay_analysis_duration.labels(status='success').observe(duration)
 
         return jsonify({
             'result': result,
@@ -214,13 +283,28 @@ def analyze_essay(current_user):
             'status': 'success'
         })
     except Exception as e:
+        duration = time.time() - start_time
         err_msg = str(e)
+        
         if 'rate' in err_msg.lower() or '429' in err_msg:
+            essay_analysis_counter.labels(user_id=current_user.id, status='rate_limited').inc()
+            groq_api_calls.labels(status='rate_limited').inc()
+            essay_analysis_duration.labels(status='rate_limited').observe(duration)
             return jsonify({'error': 'Rate limit exceeded.'}), 429
         if '401' in err_msg or 'unauthorized' in err_msg.lower():
+            essay_analysis_counter.labels(user_id=current_user.id, status='unauthorized').inc()
+            groq_api_calls.labels(status='unauthorized').inc()
+            essay_analysis_duration.labels(status='error').observe(duration)
             return jsonify({'error': 'Invalid API key.'}), 401
         if '402' in err_msg or 'payment' in err_msg.lower() or 'credit' in err_msg.lower():
+            essay_analysis_counter.labels(user_id=current_user.id, status='payment_required').inc()
+            groq_api_calls.labels(status='payment_required').inc()
+            essay_analysis_duration.labels(status='error').observe(duration)
             return jsonify({'error': 'Payment required or credits issue.'}), 402
+        
+        essay_analysis_counter.labels(user_id=current_user.id, status='error').inc()
+        groq_api_calls.labels(status='error').inc()
+        essay_analysis_duration.labels(status='error').observe(duration)
         return jsonify({'error': f'Internal server error: {err_msg}'}), 500
 
 @app.route('/api/history', methods=['GET'])

@@ -7,3 +7,5 @@ python-dotenv==1.0.0
 groq
 supabase
 pytest
+prometheus-flask-exporter
+prometheus-client
