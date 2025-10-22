@@ -102,4 +102,14 @@ curl -s -X DELETE "$SUPABASE_URL/auth/v1/admin/users/$USER_ID" \
   -H "apikey: $SUPABASE_SERVICE_ROLE_KEY" \
   -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY" >/dev/null
 
+echo "Checking Backend metrics endpoint..."
+METRICS=$(curl -fsS http://localhost:5000/metrics)
+
+for metric in auth_attempts_total active_users essay_analysis_total supabase_operations_total essay_analysis_duration_seconds_count; do
+  VALUE=$(echo "$METRICS" | grep "^$metric" | awk '{sum+= $2} END {print sum}')
+  PROMETHEUS_VALUE=$(curl -sG "http://localhost:9090/api/v1/query" \
+    --data-urlencode "query=sum($metric)" | jq -r '.data.result[0].value[1]')
+  echo "$metric = $VALUE | Prometheus $metric = $PROMETHEUS_VALUE"
+done
+
 echo "OK"
