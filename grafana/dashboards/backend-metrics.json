@@ -1,0 +1,137 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": "-- Grafana --",
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "editable": true,
+  "gnetId": null,
+  "graphTooltip": 0,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "type": "graph",
+      "title": "HTTP Requests per Second",
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "sum(rate(flask_http_request_total[5m]))",
+          "legendFormat": "{{method}} {{status}}",
+          "refId": "A"
+        }
+      ],
+      "gridPos": {"x":0,"y":0,"w":12,"h":6}
+    },
+    {
+      "type": "graph",
+      "title": "Essay Analyses per Minute",
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "sum(rate(essay_analysis_total[1m]))",
+          "legendFormat": "{{status}}",
+          "refId": "B"
+        }
+      ],
+      "gridPos": {"x":12,"y":0,"w":12,"h":6}
+    },
+    {
+      "type": "graph",
+      "title": "Groq API Calls per Minute",
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "sum(rate(groq_api_calls_total[1m]))",
+          "legendFormat": "{{status}}",
+          "refId": "C"
+        }
+      ],
+      "gridPos": {"x":0,"y":6,"w":12,"h":6}
+    },
+    {
+      "type": "graph",
+      "title": "Supabase Operations per Minute",
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "sum(rate(supabase_operations_total[1m]))",
+          "legendFormat": "{{operation}} {{status}} {{table}}",
+          "refId": "D"
+        }
+      ],
+      "gridPos": {"x":12,"y":6,"w":12,"h":6}
+    },
+    {
+      "type": "graph",
+      "title": "Active Users",
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "active_users",
+          "legendFormat": "active_users",
+          "refId": "E"
+        }
+      ],
+      "gridPos": {"x":0,"y":12,"w":12,"h":6}
+    },
+    {
+      "type": "graph",
+      "title": "Authentication Attempts",
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "sum(rate(auth_attempts_total[1m])) by (endpoint, status)",
+          "legendFormat": "{{endpoint}} {{status}}",
+          "refId": "F"
+        }
+      ],
+      "gridPos": {"x":12,"y":12,"w":12,"h":6}
+    },
+    {
+      "type": "graph",
+      "title": "Request Latency (p90)",
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.90, sum(rate(flask_http_request_duration_seconds_bucket[5m])) by (le))",
+          "legendFormat": "p90",
+          "refId": "G"
+        }
+      ],
+      "gridPos": {"x":0,"y":18,"w":12,"h":6}
+    },
+    {
+      "type": "graph",
+      "title": "Error Rate %",
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "sum(rate(flask_http_request_exceptions_total[5m])) / sum(rate(flask_http_request_total[5m])) * 100",
+          "legendFormat": "errors %",
+          "refId": "H"
+        }
+      ],
+      "gridPos": {"x":12,"y":18,"w":12,"h":6}
+    }
+  ],
+  "refresh": "5s",
+  "schemaVersion": 36,
+  "style": "dark",
+  "tags": ["backend", "metrics"],
+  "templating": {"list": []},
+  "time": {"from": "now-1h", "to": "now"},
+  "timepicker": {},
+  "timezone": "",
+  "title": "Backend Metrics Dashboard",
+  "uid": null,
+  "version": 1
+}
