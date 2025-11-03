@@ -3,7 +3,9 @@ kind: Ingress
 metadata:
   name: {{ include "chart-psychometric.name" . }}-ingress
   annotations:
-    traefik.ingress.kubernetes.io/rewrite-target: /
+    kubernetes.io/ingress.class: alb
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
 spec:
   rules:
     - host: {{ .Values.ingress.host }}
