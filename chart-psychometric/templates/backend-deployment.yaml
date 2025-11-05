@@ -22,7 +22,7 @@ spec:
             - containerPort: {{ .Values.backend.service.port }}
           envFrom:
             - secretRef:
-                name: {{ include "chart-psychometric.name" . }}-secrets
+                name: psychometry-app-secrets
           env:
             - name: TEST_MODE
               valueFrom:
