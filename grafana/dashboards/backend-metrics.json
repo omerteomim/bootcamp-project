@@ -19,9 +19,19 @@
   "links": [],
   "panels": [
     {
-      "type": "graph",
+      "type": "timeseries",
       "title": "HTTP Requests per Second",
       "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "palette-classic"},
+          "custom": {
+            "fillOpacity": 20,
+            "lineWidth": 2,
+            "showPoints": "never"
+          }
+        }
+      },
       "targets": [
         {
           "expr": "sum(rate(flask_http_request_total[5m]))",
@@ -32,48 +42,105 @@
       "gridPos": {"x":0,"y":0,"w":12,"h":6}
     },
     {
-      "type": "graph",
+      "type": "stat",
       "title": "Essay Analyses per Minute",
       "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "continuous-YlRd"},
+          "unit": "none"
+        }
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": ["last"],
+          "fields": "",
+          "values": false
+        }
+      },
       "targets": [
         {
-          "expr": "sum(rate(essay_analysis_total[1m]))",
+          "expr": "essay_analysis_total",
           "legendFormat": "{{status}}",
-          "refId": "B"
+          "refId": "A"
         }
       ],
       "gridPos": {"x":12,"y":0,"w":12,"h":6}
     },
     {
-      "type": "graph",
+      "type": "stat",
       "title": "Groq API Calls per Minute",
       "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "continuous-BlYlRd"},
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "green", "value": null},
+              {"color": "orange", "value": 500},
+              {"color": "red", "value": 1000}
+            ]
+          },
+          "custom": {
+            "fillOpacity": 60,
+            "lineWidth": 2
+          }
+        }
+      },
+      "options": {
+        "orientation": "horizontal",
+        "graphMode": "area",
+        "justifyMode": "center",
+        "reduceOptions": {
+          "calcs": ["mean"],
+          "fields": "",
+          "values": false
+        },
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true,
+        "textMode": "auto",
+        "colorMode": "background"
+      },
       "targets": [
         {
-          "expr": "sum(rate(groq_api_calls_total[1m]))",
+          "expr": "groq_api_calls_total",
           "legendFormat": "{{status}}",
           "refId": "C"
         }
       ],
-      "gridPos": {"x":0,"y":6,"w":12,"h":6}
+      "gridPos": {"x": 0, "y": 6, "w": 12, "h": 6}
     },
     {
-      "type": "graph",
+      "type": "piechart",
       "title": "Supabase Operations per Minute",
       "datasource": "Prometheus",
+      "options": {
+        "legend": {"displayMode": "table"},
+        "pieType": "pie",
+        "reduceOptions": {"calcs": ["last"]}
+      },
       "targets": [
         {
-          "expr": "sum(rate(supabase_operations_total[1m]))",
-          "legendFormat": "{{operation}} {{status}} {{table}}",
+          "expr": "sum(supabase_operations_total{status='success'}) by (operation)",
+          "legendFormat": "{{operation}}",
           "refId": "D"
         }
       ],
       "gridPos": {"x":12,"y":6,"w":12,"h":6}
     },
     {
-      "type": "graph",
+      "type": "gauge",
       "title": "Active Users",
       "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "min": 0,
+          "max": 1000,
+          "color": {"mode": "continuous-RdYlGr"}
+        }
+      },
       "targets": [
         {
           "expr": "active_users",
@@ -84,12 +151,15 @@
       "gridPos": {"x":0,"y":12,"w":12,"h":6}
     },
     {
-      "type": "graph",
+      "type": "table",
       "title": "Authentication Attempts",
       "datasource": "Prometheus",
+      "options": {
+        "showHeader": true
+      },
       "targets": [
         {
-          "expr": "sum(rate(auth_attempts_total[1m])) by (endpoint, status)",
+          "expr": "sum(rate(auth_attempts_total[5m])) by (endpoint, status)",
           "legendFormat": "{{endpoint}} {{status}}",
           "refId": "F"
         }
@@ -97,9 +167,19 @@
       "gridPos": {"x":12,"y":12,"w":12,"h":6}
     },
     {
-      "type": "graph",
+      "type": "timeseries",
       "title": "Request Latency (p90)",
       "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "continuous-BlYlRd" },
+          "custom": {
+            "lineWidth": 3,
+            "showPoints": "never",
+            "fillOpacity": 20
+          }
+        }
+      },
       "targets": [
         {
           "expr": "histogram_quantile(0.90, sum(rate(flask_http_request_duration_seconds_bucket[5m])) by (le))",
@@ -109,13 +189,31 @@
       ],
       "gridPos": {"x":0,"y":18,"w":12,"h":6}
     },
+
     {
-      "type": "graph",
+      "type": "timeseries",
       "title": "Error Rate %",
       "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "thresholds"},
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "green", "value": null},
+              {"color": "yellow", "value": 5},
+              {"color": "red", "value": 10}
+            ]
+          },
+          "custom": {
+            "lineWidth": 3,
+            "showPoints": "never"
+          }
+        }
+      },
       "targets": [
         {
-          "expr": "sum(rate(flask_http_request_exceptions_total[5m])) / sum(rate(flask_http_request_total[5m])) * 100",
+          "expr": "(sum(rate(flask_http_request_exceptions_total[5m])) or vector(0) )  /  sum(rate(flask_http_request_total[5m])) * 100",
           "legendFormat": "errors %",
           "refId": "H"
         }
@@ -129,9 +227,7 @@
   "tags": ["backend", "metrics"],
   "templating": {"list": []},
   "time": {"from": "now-1h", "to": "now"},
-  "timepicker": {},
-  "timezone": "",
-  "title": "Backend Metrics Dashboard",
-  "uid": null,
-  "version": 1
+  "title": "Backend Metrics Dashboard (Unique View)",
+  "uid": "",
+  "version": 2
 }
